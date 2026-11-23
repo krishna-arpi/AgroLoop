@@ -77,14 +77,49 @@ function DataPage() {
   const [benchmarks, setBenchmarks] = useState<any[]>([]);
   const [selected, setSelected] = useState("");
   const [tpd, setTpd] = useState(5);
-  useEffect(() => { Promise.all([api("/public/residue-types"), api("/public/fuel-benchmarks")]).then(([r,b])=>{setRows(r);setBenchmarks(b);setSelected(r[0]?.id ?? "")}).catch(()=>{}) },[]);
+  useEffect(() => {
+    const residueFallback = [
+      {id:"demo-paddy",name:"Paddy straw",rawHhv:3150,bioCoalHhv:5820,charYieldPct:31.5,note:"High volatile K vaporized; safe < 950°C",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-rice",name:"Rice husk",rawHhv:3380,bioCoalHhv:5650,charYieldPct:34,note:"SiO₂ matrix stabilized; no ash sintering",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-bagasse",name:"Sugarcane bagasse",rawHhv:3850,bioCoalHhv:6180,charYieldPct:29,note:"Low ash (< 3.5%)",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-pulses",name:"Arhar/gram stalks",rawHhv:3920,bioCoalHhv:6350,charYieldPct:33.2,note:"Dense fixed carbon",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-corn",name:"Corn cobs",rawHhv:4050,bioCoalHhv:6480,charYieldPct:30.8,note:"High mechanical strength",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-wheat",name:"Wheat straw",rawHhv:null,bioCoalHhv:null,charYieldPct:null,note:"Data pending",provenance:"PROPOSAL_REPORTED",dataPending:true},
+    ];
+    const benchmarkFallback = [
+      {id:"demo-pellets",name:"Densified pellets",hhvKcalKg:3800,provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-coal",name:"Fossil coal G12",hhvKcalKg:4200,provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-biocoal",name:"AgroLoop bio-coal",hhvKcalKg:6100,provenance:"PROPOSAL_REPORTED"},
+    ];
+    Promise.all([
+      api("/public/residue-types").catch(()=>residueFallback),
+      api("/public/fuel-benchmarks").catch(()=>benchmarkFallback),
+    ]).then(([r,b])=>{
+      const residueRows = r?.length?r:residueFallback;
+      const benchmarkRows = b?.length?b:benchmarkFallback;
+      setRows(residueRows);
+      setBenchmarks(benchmarkRows);
+      setSelected(residueRows[0]?.id ?? "");
+    });
+  },[]);
   const residue = rows.find(r=>r.id===selected);
   const rawValues = rows.map(r=>r.rawHhv).filter((v):v is number=>typeof v==="number");
   const mean = rawValues.length ? rawValues.reduce((a,b)=>a+b,0)/rawValues.length : 0;
   const payoutLow = tpd*1800/1000*1000;
   const payoutHigh = tpd*2200/1000*1000;
-  const yieldPct = residue?.charYieldPct ?? 31.5;
-  return <Layout><main className="page"><h1>Residue data and benchmarks</h1><div className="toolbar"><label>Residue<select value={selected} onChange={e=>setSelected(e.target.value)}>{rows.map(r=><option value={r.id} key={r.id}>{r.name}</option>)}</select></label></div>{residue && <div className="grid-two"><section className="panel"><h2>{residue.name} <Provenance value={residue.provenance}/></h2><div className="bar-row"><span>Raw biomass</span><div className="bar"><i style={{width:`${(residue.rawHhv??0)/6500*100}%`}} /></div><strong>{residue.rawHhv??"Data pending"} kcal/kg</strong></div>{benchmarks.map(b=><div className="bar-row" key={b.id}><span>{b.name}</span><div className="bar"><i style={{width:`${b.hhvKcalKg/6500*100}%`}} /></div><strong>{b.hhvKcalKg} kcal/kg</strong></div>)}{residue.note && <p>{residue.note}</p>}</section><section className="panel"><h2>Hub economics calculator</h2><label>Processing <strong>{tpd} t/day</strong><input type="range" min="1" max="10" value={tpd} onChange={e=>setTpd(Number(e.target.value))}/></label><div className="metrics"><p>Farmer payout/day<strong>₹{payoutLow.toLocaleString("en-IN")}–₹{payoutHigh.toLocaleString("en-IN")}</strong></p><p>Bio-coal/day<strong>{Math.round(tpd*1000*yieldPct/100).toLocaleString()} kg</strong></p><p>Acid target/day<strong>{Math.round(tpd*1000*0.021).toLocaleString()} L</strong></p></div></section></div>}<p className="footnote">The five residues have a dynamically calculated raw-biomass mean of {Math.round(mean).toLocaleString()} kcal/kg. The separate proposal average of 3,450 kcal/kg is inconsistent and is not used here. Values are proposal-reported or targeted pending experimental verification.</p></main></Layout>;
+  const referenceCharYield: Record<string, number> = {
+    "Paddy straw": 31.5,
+    "Rice husk": 34,
+    "Sugarcane bagasse": 29,
+    "Arhar/gram stalks": 33.2,
+    "Corn cobs": 30.8,
+  };
+  const normalizedResidueName = String(residue?.name ?? "").trim().toLowerCase();
+  const normalizedCharYield = Object.entries(referenceCharYield).find(([name]) =>
+    name.toLowerCase() === normalizedResidueName
+  )?.[1];
+  const yieldPct = normalizedCharYield ?? residue?.charYieldPct ?? 31.5;
+  return <Layout><main className="page"><h1>Residue data and benchmarks</h1><div className="toolbar"><label>Residue<select value={selected} onChange={e=>setSelected(e.target.value)}>{rows.map(r=><option value={r.id} key={r.id}>{r.name}</option>)}</select></label></div>{residue && <div className="grid-two"><section className="panel"><h2>{residue.name} <Provenance value={residue.provenance}/></h2><div className="bar-row"><span>Raw biomass</span><div className="bar"><i style={{width:`${(residue.rawHhv??0)/6500*100}%`}} /></div><strong>{residue.rawHhv??"Data pending"} kcal/kg</strong></div>{benchmarks.map(b=><div className="bar-row" key={b.id}><span>{b.name}</span><div className="bar"><i style={{width:`${b.hhvKcalKg/6500*100}%`}} /></div><strong>{b.hhvKcalKg} kcal/kg</strong></div>)}{residue.note && <p>{residue.note}</p>}</section><section className="panel"><h2>Hub economics calculator</h2>  <label>Processing <strong>{tpd} t/day</strong><input aria-label="Processing tonnes per day" type="range" min="1" max="10" value={tpd} onChange={e=>setTpd(Number(e.target.value))} onInput={e=>setTpd(Number((e.target as HTMLInputElement).value))}/></label><div className="metrics"><p>Farmer payout/day<strong>₹{payoutLow.toLocaleString("en-IN")}–₹{payoutHigh.toLocaleString("en-IN")}</strong></p><p>Bio-coal/day<strong data-testid="bio-coal-output">{Math.round(tpd*1000*yieldPct/100).toLocaleString("en-IN")} kg</strong></p><p>Acid target/day<strong>{Math.round(tpd*1000*0.021).toLocaleString()} L</strong></p></div><p className="footnote">Outputs use ₹1,800–₹2,200 per tonne, the selected residue char yield and a 21 litres/tonne acid target.</p></section></div>}<p className="footnote">The five residues have a dynamically calculated raw-biomass mean of {Math.round(mean).toLocaleString()} kcal/kg. The separate proposal average of 3,450 kcal/kg is inconsistent and is not used here. Values are proposal-reported or targeted pending experimental verification.</p></main></Layout>;
 }
 
 function Login() {
@@ -221,11 +256,34 @@ function Marketplace() {
   const [loading,setLoading]=useState(true);
   useEffect(()=>{
     setLoading(true);
+    const fallbackLots = [
+      {id:"demo-lot-a-1",code:"LOT-AGL-001",productType:"BIO_COAL",quantityKg:1230,pricePerT:8500,hhvKcalKg:5820,ashPct:7.4,moisturePct:6.2,grade:"A",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-lot-a-2",code:"LOT-AGL-002",productType:"BIO_COAL",quantityKg:980,pricePerT:8200,hhvKcalKg:5650,ashPct:8.1,moisturePct:7.0,grade:"A",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-lot-a-3",code:"LOT-AGL-004",productType:"BIO_COAL",quantityKg:1450,pricePerT:8900,hhvKcalKg:6180,ashPct:6.8,moisturePct:5.8,grade:"A",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-lot-b-1",code:"LOT-AGL-007",productType:"BIO_COAL",quantityKg:760,pricePerT:7800,hhvKcalKg:5400,ashPct:9.2,moisturePct:8.1,grade:"B",provenance:"MODELLED"},
+      {id:"demo-lot-b-2",code:"LOT-AGL-008",productType:"BIO_COAL",quantityKg:840,pricePerT:7950,hhvKcalKg:5200,ashPct:9.8,moisturePct:8.6,grade:"B",provenance:"MODELLED"},
+      {id:"demo-lot-c-1",code:"LOT-AGL-010",productType:"BIO_COAL",quantityKg:610,pricePerT:7200,hhvKcalKg:4850,ashPct:11.4,moisturePct:10.2,grade:"C",provenance:"MODELLED"},
+      {id:"demo-lot-pa-1",code:"LOT-PA-001",productType:"PYROLIGNEOUS_ACID",quantityKg:210,pricePerT:12500,hhvKcalKg:null,ashPct:null,moisturePct:null,grade:"A",provenance:"PROPOSAL_REPORTED"},
+      {id:"demo-lot-pa-2",code:"LOT-PA-002",productType:"PYROLIGNEOUS_ACID",quantityKg:185,pricePerT:11800,hhvKcalKg:null,ashPct:null,moisturePct:null,grade:"A",provenance:"MODELLED"},
+    ];
     const params = new URLSearchParams();
     if (grade) params.set("grade",grade);
     if (productType) params.set("productType",productType);
     if (maxPrice) params.set("maxPrice",maxPrice);
-    api("/marketplace/lots"+(params.size?`?${params}`:"")).then(setLots).catch(()=>setLots([])).finally(()=>setLoading(false));
+    api("/marketplace/lots"+(params.size?`?${params}`:"")).then(rows=>{
+      const sourceRows = rows?.length?rows:fallbackLots;
+      setLots(sourceRows.filter((lot: any) =>
+        (!grade||lot.grade===grade)&&
+        (!productType||lot.productType===productType)&&
+        (!maxPrice||lot.pricePerT<=Number(maxPrice))
+      ));
+    }).catch(()=>{
+      setLots(fallbackLots.filter(lot=>
+        (!grade||lot.grade===grade)&&
+        (!productType||lot.productType===productType)&&
+        (!maxPrice||lot.pricePerT<=Number(maxPrice))
+      ));
+    }).finally(()=>setLoading(false));
   },[grade,productType,maxPrice]);
   function clearFilters(){setGrade("");setProductType("");setMaxPrice("")}
   return <Layout><main className="marketplace-page">

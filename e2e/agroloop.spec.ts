@@ -12,6 +12,11 @@ test("public research and data pages render", async ({ page }) => {
   await expect(page.getByLabel("Residue").locator("option").first()).toBeAttached();
   await expect(page.getByRole("heading", { name: "Hub economics calculator" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Paddy straw/ })).toBeVisible();
+  await page.getByLabel("Residue").selectOption({ label: "Rice husk" });
+  await expect(page.getByRole("heading", { name: /Rice husk/ })).toBeVisible();
+  await page.getByLabel("Processing tonnes per day").focus();
+  await page.getByLabel("Processing tonnes per day").press("End");
+  await expect(page.getByTestId("bio-coal-output")).toHaveText("3,400 kg");
 });
 
 test("public lot lookup page renders", async ({ page }) => {
