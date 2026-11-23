@@ -17,7 +17,7 @@
     "test": "npm run test -w apps/api",
     "test:e2e": "playwright test",
     "prisma": "npm run prisma -w apps/api",
-    "prepare": "husky"
+    "prepare": "node scripts/prepare.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

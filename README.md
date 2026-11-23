@@ -348,6 +348,9 @@ configuration are kept outside source control. A live database, production JWT
 secrets and production object storage are required before database-backed production
 workflows can be considered complete.
 
+Husky is installed only inside a local Git checkout. Vercel and other CI environments
+skip Husky setup, preventing `husky: command not found` during dependency installation.
+
 ## Data integrity and limitations
 
 - All reference values carry provenance: `PROPOSAL_REPORTED`, `LITERATURE`,
