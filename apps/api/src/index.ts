@@ -163,6 +163,7 @@ const openApi = {
 };
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApi));
 app.get("/health", (_req, res) => res.json({ status: "ok", service: "agroloop-api" }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "agroloop-api", deployment: "vercel" }));
 
 const demoAccounts: Record<string, { password: string; id: string; role: "FARMER" | "HUB_OPERATOR" | "INDUSTRIAL_BUYER" | "ADMIN"; name: string }> = {
   "admin@agroloop.local": { password: "AgroLoop123!", id: "demo-admin", role: "ADMIN", name: "AgroLoop Admin" },
@@ -202,6 +203,18 @@ app.post("/api/v1/auth/register", authLimiter, async (req, res) => {
 app.post("/api/v1/auth/login", authLimiter, async (req, res) => {
   const parsed = z.object({ email: z.string().email(), password: z.string().min(1) }).safeParse(req.body);
   if (!parsed.success) return error(res, 400, "VALIDATION_ERROR", "Invalid login");
+  const demo = demoAccounts[parsed.data.email];
+  if (demo && demo.password === parsed.data.password) {
+    try {
+      const accessToken = jwt.sign({ id: demo.id, role: demo.role }, accessSecret, { expiresIn: "15m" });
+      const refreshToken = jwt.sign({ id: demo.id }, refreshSecret, { expiresIn: "7d" });
+      cookie(res, "accessToken", accessToken, 15 * 60 * 1000);
+      cookie(res, "refreshToken", refreshToken, 7 * 24 * 60 * 60 * 1000);
+      return res.json({ user: { id: demo.id, email: parsed.data.email, role: demo.role } });
+    } catch (caught) {
+      return error(res, 500, "AUTH_SETUP_ERROR", "Demo login configuration is invalid", String(caught));
+    }
+  }
   let authenticatedId: string;
   let authenticatedRole: string;
   let authenticatedEmail = parsed.data.email;
