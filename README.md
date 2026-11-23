@@ -351,6 +351,9 @@ workflows can be considered complete.
 Husky is installed only inside a local Git checkout. Vercel and other CI environments
 skip Husky setup, preventing `husky: command not found` during dependency installation.
 
+Deployment builds use the workspace-aware `vercel-build` scripts. A redeploy should
+clone the current `main` branch rather than reuse an older deployment commit.
+
 ## Data integrity and limitations
 
 - All reference values carry provenance: `PROPOSAL_REPORTED`, `LITERATURE`,
