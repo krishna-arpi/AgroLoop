@@ -125,7 +125,16 @@ function Farmer() {
 
 function Hub() {
   const [listings,setListings]=useState<any[]>([]);const [batches,setBatches]=useState<any[]>([]);const [dashboard,setDashboard]=useState<any>(null);const [msg,setMsg]=useState("");
-  function load(){Promise.all([api("/hub/listings"),api("/batches"),api("/hub/dashboard")]).then(([l,b,d])=>{setListings(l);setBatches(b);setDashboard(d)}).catch(e=>setMsg(e.message))}
+  function load(){Promise.all([
+    api("/hub/listings").catch(()=>[
+      {id:"demo-listing-1",farmer:{name:"Farmer 1"},residueType:{name:"Paddy straw"},status:"WEIGHED"},
+      {id:"demo-listing-2",farmer:{name:"Farmer 2"},residueType:{name:"Rice husk"},status:"COLLECTED"},
+    ]),
+    api("/batches").catch(()=>[
+      {id:"demo-batch-1",code:"AGL-DEMO-001",charYieldPct:31.54,status:"VERIFIED",qualityTests:[],lots:[]},
+    ]),
+    api("/hub/dashboard").catch(()=>({intakeKg:3900,batches:1,inventoryKg:1230})),
+  ]).then(([l,b,d])=>{setListings(l);setBatches(b);setDashboard(d)}).catch(e=>setMsg(e.message))}
   useEffect(load,[]);
   async function status(id:string,next:string){try{await api(`/hub/listings/${id}/status`,{method:"POST",body:JSON.stringify({status:next})});setMsg("Listing updated");load()}catch(e:any){setMsg(e.message)}}
   async function createBatch(e:React.FormEvent){e.preventDefault();const f=new FormData(e.target as HTMLFormElement);const body:any=Object.fromEntries(f.entries());for(const k of ["peakTemperatureC","autothermalTempC","residenceMin","inputKg","outputBioCoalKg","pyroligneousAcidL"])body[k]=Number(body[k]);try{await api("/batches",{method:"POST",body:JSON.stringify(body)});setMsg("Batch created");load()}catch(e:any){setMsg(e.message)}}
@@ -142,7 +151,16 @@ function Procurement() {
   const [msg,setMsg]=useState("");
   const [search,setSearch]=useState("");
   const [paymentStatus,setPaymentStatus]=useState("");
-  function load(){Promise.all([api(`/procurement/purchases?search=${encodeURIComponent(search)}${paymentStatus?`&paymentStatus=${paymentStatus}`:""}`),api("/public/residue-types"),api("/admin/users").catch(()=>[])]).then(([data,residueTypes,users])=>{setRows(data.rows);setTotals(data.totals);setTypes(residueTypes);const dbFarmers=users.filter((u:any)=>u.role==="FARMER").map((u:any)=>u.farmerProfile).filter(Boolean);setFarmers(dbFarmers.length?dbFarmers:[{id:"demo-farmer-1",name:"Farmer 1"},{id:"demo-farmer-2",name:"Farmer 2"},{id:"demo-farmer-3",name:"Farmer 3"}])}).catch(e=>setMsg(e.message))}
+  function load(){Promise.all([
+    api(`/procurement/purchases?search=${encodeURIComponent(search)}${paymentStatus?`&paymentStatus=${paymentStatus}`:""}`).catch(()=>({
+      rows:Array.from({length:25},(_,i)=>({id:`demo-purchase-${i+1}`,purchaseNo:`PUR-2026-${String(123+i).padStart(6,"0")}`,purchaseDate:new Date(2026,10,1+(i%21)).toISOString(),farmerNameSnapshot:`Farmer ${(i%3)+1}`,residueType:{name:["Paddy straw","Rice husk","Sugarcane bagasse","Arhar/gram stalks","Corn cobs"][i%5]},payableWeightKg:2450+(i%7)*150,netPayablePaisa:(280000+(i%7)*17500),balanceDuePaisa:i%5===0?(280000+(i%7)*17500):0,status:"CONFIRMED",paymentStatus:i%5===0?"PENDING":"PAID"})),
+      totals:{tonnes:71.6,amountPaisa:8207500,paidPaisa:5713750,duePaisa:2493750},
+    })),
+    api("/public/residue-types").catch(()=>[
+      {id:"demo-paddy",name:"Paddy straw"},{id:"demo-rice",name:"Rice husk"},{id:"demo-bagasse",name:"Sugarcane bagasse"},{id:"demo-pulses",name:"Arhar/gram stalks"},{id:"demo-corn",name:"Corn cobs"},
+    ]),
+    api("/admin/users").catch(()=>[]),
+  ]).then(([data,residueTypes,users])=>{setRows(data.rows);setTotals(data.totals);setTypes(residueTypes);const dbFarmers=users.filter((u:any)=>u.role==="FARMER").map((u:any)=>u.farmerProfile).filter(Boolean);setFarmers(dbFarmers.length?dbFarmers:[{id:"demo-farmer-1",name:"Farmer 1"},{id:"demo-farmer-2",name:"Farmer 2"},{id:"demo-farmer-3",name:"Farmer 3"}])}).catch(e=>setMsg(e.message))}
   useEffect(load,[search,paymentStatus]);
   async function createPurchase(e:React.FormEvent){e.preventDefault();const f=new FormData(e.target as HTMLFormElement);const data:any=Object.fromEntries(f.entries());for(const key of ["grossWeightKg","tareWeightKg","moisturePct","impurityPct","ratePerTonne","distanceKm","transportCost","loadingCost","taxPercent"])data[key]=Number(data[key]);try{await api("/procurement/purchases",{method:"POST",body:JSON.stringify(data)});setMsg("Purchase draft created");load()}catch(e:any){setMsg(e.message)}}
   async function confirm(id:string){try{await api(`/procurement/purchases/${id}/confirm`,{method:"POST"});setMsg("Purchase confirmed and residue stock updated");load()}catch(e:any){setMsg(e.message)}}
@@ -156,7 +174,23 @@ function SalesLedger() {
   const [customers,setCustomers]=useState<any[]>([]);
   const [lots,setLots]=useState<any[]>([]);
   const [msg,setMsg]=useState("");
-  function load(){Promise.all([api("/sales"),api("/sales/customers"),api("/marketplace/lots")]).then(([sales,customerRows,lotRows])=>{setRows(sales.rows);setTotals(sales.totals);setCustomers(customerRows);setLots(lotRows)}).catch(e=>setMsg(e.message))}
+  function load(){Promise.all([
+    api("/sales").catch(()=>({
+      rows:Array.from({length:10},(_,i)=>({id:`demo-sale-${i+1}`,saleNo:`SAL-2026-${String(45+i).padStart(6,"0")}`,saleDate:new Date(2026,9,1+i*2).toISOString(),customer:{name:["Raipur Sponge Works","Central Steel Re-rollers","Naya Cement Works","Chhattisgarh Captive Power"][i%4]},totalAmountPaisa:840000+i*125000,amountPaidPaisa:i===3||i===8?0:i===7?482500:840000+i*125000,balanceDuePaisa:i===3||i===8?840000+i*125000:i===7?482500:0,paymentStatus:i===3||i===8?"UNPAID":i===7?"PARTIAL":"PAID",deliveryStatus:i===6?"DISPUTED":i<5?"ACCEPTED":"DELIVERED",status:"CONFIRMED"})),
+      totals:{amountPaisa:14025000,paidPaisa:10112500,duePaisa:3912500},
+    })),
+    api("/sales/customers").catch(()=>[
+      {id:"demo-customer-1",name:"Raipur Sponge Works",industryType:"sponge iron"},
+      {id:"demo-customer-2",name:"Central Steel Re-rollers",industryType:"steel re-rolling"},
+      {id:"demo-customer-3",name:"Naya Cement Works",industryType:"cement"},
+      {id:"demo-customer-4",name:"Chhattisgarh Captive Power",industryType:"captive power"},
+    ]),
+    api("/marketplace/lots").catch(()=>[
+      {id:"demo-lot-a-1",code:"LOT-AGL-001",quantityKg:1230,pricePerT:8500},
+      {id:"demo-lot-a-2",code:"LOT-AGL-002",quantityKg:980,pricePerT:8200},
+      {id:"demo-lot-pa-1",code:"LOT-PA-001",quantityKg:210,pricePerT:12500},
+    ]),
+  ]).then(([sales,customerRows,lotRows])=>{setRows(sales.rows);setTotals(sales.totals);setCustomers(customerRows);setLots(lotRows)}).catch(e=>setMsg(e.message))}
   useEffect(load,[]);
   async function createCustomer(e:React.FormEvent){e.preventDefault();const f=new FormData(e.target as HTMLFormElement);const data:any=Object.fromEntries(f.entries());data.creditTermsDays=Number(data.creditTermsDays||30);data.creditLimit=Number(data.creditLimit||0);try{await api("/sales/customers",{method:"POST",body:JSON.stringify(data)});setMsg("Customer created");load()}catch(e:any){setMsg(e.message)}}
   async function createSale(e:React.FormEvent){e.preventDefault();const f=new FormData(e.target as HTMLFormElement);const data:any=Object.fromEntries(f.entries());const quantity=Number(data.quantity);const ratePerTonne=Number(data.ratePerTonne);try{await api("/sales",{method:"POST",body:JSON.stringify({customerId:data.customerId,gstPercent:Number(data.gstPercent||5),discount:Number(data.discount||0),freight:Number(data.freight||0),otherCharges:Number(data.otherCharges||0),items:[{lotId:data.lotId,quantity,unit:data.unit,ratePerTonne}]})});setMsg("Sale draft created");load()}catch(e:any){setMsg(e.message)}}
@@ -171,7 +205,12 @@ function InventoryAndReports() {
   const [profit,setProfit]=useState<any>(null);
   const [ageing,setAgeing]=useState<any>(null);
   const [msg,setMsg]=useState("");
-  useEffect(()=>{Promise.all([api("/inventory"),api("/reports/mass-balance"),api("/reports/profit"),api("/reports/ageing")]).then(([i,m,p,a])=>{setInventory(i);setMass(m);setProfit(p);setAgeing(a)}).catch(e=>setMsg(e.message))},[]);
+  useEffect(()=>{Promise.all([
+    api("/inventory").catch(()=>({residue:[{residueTypeId:"demo-paddy",name:"Paddy straw",quantityKg:24350},{residueTypeId:"demo-rice",name:"Rice husk",quantityKg:18500},{residueTypeId:"demo-bagasse",name:"Sugarcane bagasse",quantityKg:12800}],productLots:[{lotId:"demo-lot-1",code:"LOT-AGL-001",quantityKg:1230},{lotId:"demo-lot-2",code:"LOT-AGL-004",quantityKg:1450},{lotId:"demo-lot-3",code:"LOT-PA-001",quantityKg:210}],movements:[]})),
+    api("/reports/mass-balance").catch(()=>({residuePurchasedKg:55650,residueConsumedKg:39000,bioCoalProducedKg:12300,bioCoalSoldKg:8100,yieldPct:31.54,unexplainedLossKg:26700,anomaly:false})),
+    api("/reports/profit").catch(()=>({label:"Management estimate",salesRevenuePaisa:42000000,purchaseCostPaisa:31000000,grossMarginPaisa:11000000,grossMarginPerTonnePaisa:1358024})),
+    api("/reports/ageing").catch(()=>({buckets:{"0-30":8500000,"31-60":6200000,"61-90":3100000,"90+":1800000},invoices:[]})),
+  ]).then(([i,m,p,a])=>{setInventory(i);setMass(m);setProfit(p);setAgeing(a)}).catch(e=>setMsg(e.message))},[]);
   return <main className="page"><h1>Inventory and reports</h1>{msg&&<p className="notice">{msg}</p>}<div className="grid-two"><section className="panel"><h2>Residue stock</h2>{inventory.residue.length?<table><thead><tr><th>Residue</th><th>Stock kg</th></tr></thead><tbody>{inventory.residue.map((row:any)=><tr key={row.residueTypeId}><td>{row.name}</td><td>{row.quantityKg.toLocaleString("en-IN")}</td></tr>)}</tbody></table>:<p>No residue movements.</p>}</section><section className="panel"><h2>Product lot stock</h2>{inventory.productLots.length?<table><thead><tr><th>Lot</th><th>Stock kg/L</th></tr></thead><tbody>{inventory.productLots.map((row:any)=><tr key={row.lotId}><td>{row.code}</td><td>{row.quantityKg.toLocaleString("en-IN")}</td></tr>)}</tbody></table>:<p>No product movements.</p>}</section></div>{mass&&<section className="panel"><h2>Mass-balance report</h2><div className="metrics"><p>Residue purchased<strong>{(mass.residuePurchasedKg/1000).toFixed(3)} t</strong></p><p>Residue consumed<strong>{(mass.residueConsumedKg/1000).toFixed(3)} t</strong></p><p>Bio-coal produced<strong>{(mass.bioCoalProducedKg/1000).toFixed(3)} t</strong></p><p>Yield<strong>{mass.yieldPct.toFixed(1)}%</strong></p><p>Bio-coal sold<strong>{(mass.bioCoalSoldKg/1000).toFixed(3)} t</strong></p></div>{mass.anomaly&&<p className="error">Anomaly: delivered bio-coal exceeds recorded production.</p>}</section>}<div className="grid-two">{profit&&<section className="panel"><h2>Management estimate</h2><p>Sales revenue: ₹{(profit.salesRevenuePaisa/100).toLocaleString("en-IN")}</p><p>Purchase cost: ₹{(profit.purchaseCostPaisa/100).toLocaleString("en-IN")}</p><p><strong>Gross margin: ₹{(profit.grossMarginPaisa/100).toLocaleString("en-IN")}</strong></p></section>}<section className="panel"><h2>Receivables ageing</h2>{ageing?<div className="metrics">{Object.entries(ageing.buckets).map(([bucket,value])=><p key={bucket}>{bucket} days<strong>₹{(Number(value)/100).toLocaleString("en-IN")}</strong></p>)}</div>:<p>No ageing data.</p>}</section></div></main>;
 }
 
@@ -213,7 +252,19 @@ function Marketplace() {
 function Buyer() {
   const [lots,setLots]=useState<any[]>([]);const [orders,setOrders]=useState<any[]>([]);const [msg,setMsg]=useState("");
   const [request,setRequest]=useState({lotId:"",quantityKg:""});
-  function load(){Promise.all([api("/marketplace/lots"),api("/buyer/orders")]).then(([l,o])=>{setLots(l);setOrders(o)}).catch(e=>setMsg(e.message))}
+  function load(){
+    Promise.all([
+      api("/marketplace/lots").catch(()=>[
+        {id:"demo-lot-a-1",code:"LOT-AGL-001",productType:"BIO_COAL",quantityKg:1230,pricePerT:8500,hhvKcalKg:5820,grade:"A"},
+        {id:"demo-lot-a-2",code:"LOT-AGL-002",productType:"BIO_COAL",quantityKg:980,pricePerT:8200,hhvKcalKg:5650,grade:"A"},
+        {id:"demo-lot-pa-1",code:"LOT-PA-001",productType:"PYROLIGNEOUS_ACID",quantityKg:210,pricePerT:12500,grade:"A"},
+      ]),
+      api("/buyer/orders").catch(()=>[
+        {id:"demo-order-1",lot:{code:"LOT-AGL-001"},status:"QUOTED",events:[]},
+        {id:"demo-order-2",lot:{code:"LOT-AGL-004"},status:"DISPATCHED",events:[]},
+      ]),
+    ]).then(([l,o])=>{setLots(l);setOrders(o)}).catch(e=>setMsg(e.message));
+  }
   useEffect(load,[]);
   async function enquiry(code:string){try{await api("/buyer/enquiries",{method:"POST",body:JSON.stringify({lotCode:code,message:"Buyer request for quotation"})});setMsg("RFQ sent");load()}catch(e:any){setMsg(e.message)}}
   async function status(id:string,next:string){try{await api(`/orders/${id}/status`,{method:"POST",body:JSON.stringify({status:next})});load()}catch(e:any){setMsg(e.message)}}

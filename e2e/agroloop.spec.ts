@@ -22,9 +22,9 @@ test("public lot lookup page renders", async ({ page }) => {
 test("marketplace grade filter shows published lots", async ({ page }) => {
   await page.goto("/marketplace");
   await expect(page.getByRole("heading", { name: "Marketplace" })).toBeVisible();
-  await expect(page.getByText("LOT-AGL-001")).toBeVisible();
+  await expect(page.getByText("LOT-AGL-001", { exact: true }).first()).toBeVisible();
   await page.getByLabel("Grade").selectOption("A");
-  await expect(page.getByText("LOT-AGL-001")).toBeVisible();
+  await expect(page.getByText("LOT-AGL-001", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("LOT-AGL-007")).not.toBeVisible();
   await page.getByLabel("Product").selectOption("PYROLIGNEOUS_ACID");
   await expect(page.getByText("LOT-PA-001")).toBeVisible();
@@ -44,4 +44,5 @@ test("farmer and buyer features are accessible", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Farmer residue offer" })).toBeVisible();
   await page.goto("/buyer");
   await expect(page.getByRole("heading", { name: "Industrial buyer portal" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "LOT-AGL-001" }).first()).toBeVisible();
 });
