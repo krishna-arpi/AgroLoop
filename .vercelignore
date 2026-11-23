@@ -1,0 +1,6 @@
+node_modules
+apps/api/dist
+apps/web/node_modules
+test-results
+playwright-report
+.env

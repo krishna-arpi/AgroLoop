@@ -1,0 +1,697 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  FARMER
+  HUB_OPERATOR
+  INDUSTRIAL_BUYER
+  ADMIN
+  PUBLIC
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ListingStatus {
+  LISTED
+  HUB_ACCEPTED
+  PICKUP_SCHEDULED
+  COLLECTED
+  WEIGHED
+  PAID
+  REJECTED
+}
+
+enum BatchStatus {
+  PLANNED
+  PROCESSING
+  COMPLETE
+  TEST_PENDING
+  VERIFIED
+  CANCELLED
+}
+
+enum OrderStatus {
+  RFQ
+  QUOTED
+  ORDERED
+  DISPATCHED
+  DELIVERED
+  ACCEPTED
+  CANCELLED
+}
+
+enum Provenance {
+  PROPOSAL_REPORTED
+  LITERATURE
+  MODELLED
+  MEASURED
+}
+
+enum PurchaseStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum PurchasePaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+enum PurchasePaymentMethod {
+  CASH
+  UPI
+  BANK
+  CHEQUE
+}
+
+enum LedgerTransportMode {
+  HUB_PICKUP
+  FARMER_DELIVERY
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum SaleStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PLANNED
+  DISPATCHED
+  DELIVERED
+  ACCEPTED
+  DISPUTED
+}
+
+enum SalePaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum SalePaymentMethod {
+  CASH
+  UPI
+  BANK
+  CHEQUE
+}
+
+enum InventoryMovementType {
+  PURCHASE_IN
+  BATCH_CONSUME
+  BATCH_OUTPUT
+  SALE_OUT
+  ADJUSTMENT
+}
+
+model User {
+  id            String       @id @default(cuid())
+  phone         String?      @unique
+  email         String?      @unique
+  passwordHash  String
+  role          UserRole
+  verified      VerificationStatus @default(PENDING)
+  refreshToken  String?
+  deletedAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  farmerProfile FarmerProfile?
+  hubProfile    HubProfile?
+  buyerProfile  BuyerProfile?
+  auditLogs     AuditLog[]
+  notifications Notification[]
+}
+
+model FarmerProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  village   String
+  district  String
+  state     String
+  landArea  Float?
+  fpoName   String?
+  latitude  Float?
+  longitude Float?
+  deletedAt DateTime?
+  listings  ResidueListing[]
+  purchases Purchase[]
+}
+
+model HubProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  name         String
+  village      String
+  district     String
+  state        String
+  latitude     Float
+  longitude    Float
+  capacityTpd  Float
+  retortUnits  Int      @default(1)
+  serviceRadiusKm Float @default(25)
+  approved     Boolean  @default(false)
+  deletedAt    DateTime?
+  batches      Batch[]
+  lots         ProductLot[]
+  intakes      IntakeRecord[]
+  purchases    Purchase[]
+  sales        Sale[]
+  inventoryMovements InventoryMovement[]
+}
+
+model BuyerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  companyName    String
+  industryType   String
+  minHhv         Float?
+  maxAsh         Float?
+  maxMoisture    Float?
+  latitude       Float?
+  longitude      Float?
+  deletedAt      DateTime?
+  orders         Order[]
+  customer       Customer?
+}
+
+model ResidueType {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  rawHhv       Float?
+  bioCoalHhv   Float?
+  charYieldPct Float?
+  note         String?
+  provenance   Provenance @default(PROPOSAL_REPORTED)
+  dataPending  Boolean @default(false)
+  listings     ResidueListing[]
+  purchases    Purchase[]
+  inventoryMovements InventoryMovement[]
+  deletedAt    DateTime?
+}
+
+model ResidueListing {
+  id              String        @id @default(cuid())
+  farmerId        String
+  farmer          FarmerProfile @relation(fields: [farmerId], references: [id])
+  residueTypeId   String
+  residueType     ResidueType   @relation(fields: [residueTypeId], references: [id])
+  quantityT       Float
+  moisturePct     Float
+  baleOrLoose     String
+  locationText    String
+  latitude        Float?
+  longitude       Float?
+  availableFrom   DateTime
+  availableTo     DateTime
+  status          ListingStatus @default(LISTED)
+  photos          FileUpload[]
+  pickupRequests  PickupRequest[]
+  intakes         IntakeRecord[]
+  purchases       Purchase[]
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([residueTypeId])
+}
+
+model PickupRequest {
+  id         String         @id @default(cuid())
+  listingId  String
+  listing    ResidueListing @relation(fields: [listingId], references: [id])
+  mode       String
+  scheduledAt DateTime?
+  status     String         @default("REQUESTED")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+model IntakeRecord {
+  id            String         @id @default(cuid())
+  listingId     String
+  listing       ResidueListing @relation(fields: [listingId], references: [id])
+  hubId         String
+  hub           HubProfile     @relation(fields: [hubId], references: [id])
+  weighedKg     Float
+  moisturePct   Float
+  shreddingMm   Float?
+  rejected      Boolean        @default(false)
+  flagReason    String?
+  createdAt     DateTime       @default(now())
+  batchInputs   BatchInput[]
+  purchases     Purchase[]
+}
+
+model Batch {
+  id                 String      @id @default(cuid())
+  hubId              String
+  hub                HubProfile  @relation(fields: [hubId], references: [id])
+  code               String      @unique
+  status             BatchStatus @default(PLANNED)
+  peakTemperatureC   Float?
+  autothermalTempC   Float?
+  residenceMin       Float?
+  startedAt          DateTime?
+  endedAt            DateTime?
+  inputKg            Float       @default(0)
+  outputBioCoalKg    Float?
+  pyroligneousAcidL  Float?
+  charYieldPct       Float?
+  deletedAt          DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  inputs             BatchInput[]
+  qualityTests       QualityTest[]
+  lots               ProductLot[]
+  carbonEstimates    CarbonEstimate[]
+  inventoryMovements InventoryMovement[]
+}
+
+model BatchInput {
+  id        String        @id @default(cuid())
+  batchId   String
+  batch     Batch         @relation(fields: [batchId], references: [id])
+  intakeId  String
+  intake    IntakeRecord  @relation(fields: [intakeId], references: [id])
+  feedPct   Float
+  weightKg  Float
+}
+
+model QualityTest {
+  id             String      @id @default(cuid())
+  batchId        String
+  batch          Batch       @relation(fields: [batchId], references: [id])
+  hhvKcalKg      Float
+  moisturePct    Float
+  ashPct         Float
+  volatileMatterPct Float?
+  fixedCarbonPct Float?
+  alkaliIndex    Float?
+  chlorinePct    Float?
+  ashFusionTempC Float?
+  testStandard   String?
+  provenance     Provenance  @default(MEASURED)
+  grade          String
+  reportUploadId String?
+  reportUpload   FileUpload? @relation(fields: [reportUploadId], references: [id])
+  createdAt      DateTime    @default(now())
+}
+
+model ProductLot {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  batchId     String
+  batch       Batch    @relation(fields: [batchId], references: [id])
+  hubId       String
+  hub         HubProfile @relation(fields: [hubId], references: [id])
+  productType String
+  quantityKg  Float
+  pricePerT   Float
+  hhvKcalKg   Float?
+  ashPct      Float?
+  moisturePct Float?
+  grade       String?
+  published   Boolean  @default(false)
+  qrPayload   String?
+  createdAt   DateTime @default(now())
+  orders      Order[]
+  saleItems   SaleItem[]
+  inventoryMovements InventoryMovement[]
+}
+
+model Enquiry {
+  id        String   @id @default(cuid())
+  subject   String
+  message   String
+  email     String
+  phone     String?
+  source    String   @default("PUBLIC")
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  buyerId    String
+  buyer      BuyerProfile @relation(fields: [buyerId], references: [id])
+  lotId      String
+  lot        ProductLot @relation(fields: [lotId], references: [id])
+  quantityKg Float
+  status     OrderStatus @default(RFQ)
+  quotedPricePerT Float?
+  invoiceUrl String?
+  receivedKg Float?
+  qualityRemarks String?
+  events     OrderEvent[]
+  payments   Payment[]
+  sale       Sale?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  amount    Float
+  mock      Boolean  @default(true)
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model EmissionFactor {
+  id         String     @id @default(cuid())
+  key        String     @unique
+  name       String
+  value      Float
+  unit       String
+  provenance Provenance
+  source     String
+  deletedAt  DateTime?
+}
+
+model CarbonEstimate {
+  id              String   @id @default(cuid())
+  batchId         String
+  batch           Batch    @relation(fields: [batchId], references: [id])
+  avoidedBurningT Float
+  displacedCoalT  Float
+  processT        Float
+  transportT      Float
+  netEstimatedT  Float
+  assumptions     String
+  formula         String
+  label           String   @default("Estimated, not verified")
+  createdAt       DateTime @default(now())
+}
+
+model FuelBenchmark {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  hhvKcalKg  Float
+  provenance Provenance
+  source     String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+  @@index([entity, entityId])
+}
+
+model FileUpload {
+  id        String   @id @default(cuid())
+  listingId String?
+  listing   ResidueListing? @relation(fields: [listingId], references: [id])
+  originalName String
+  mimeType  String
+  sizeBytes Int
+  storageKey String
+  createdAt DateTime @default(now())
+  qualityReports QualityTest[]
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model ContentBlock {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  locale    String   @default("en")
+  title     String?
+  body      String
+  updatedAt DateTime @updatedAt
+}
+
+model Purchase {
+  id                 String                @id @default(cuid())
+  purchaseNo         String                @unique
+  purchaseDate       DateTime
+  hubId              String
+  hub                HubProfile            @relation(fields: [hubId], references: [id])
+  farmerId           String
+  farmer             FarmerProfile         @relation(fields: [farmerId], references: [id])
+  farmerNameSnapshot String
+  farmerPhoneSnapshot String?
+  farmerVillageSnapshot String
+  farmerDistrictSnapshot String
+  fpoNameSnapshot    String?
+  listingId          String?
+  listing            ResidueListing?       @relation(fields: [listingId], references: [id])
+  intakeRecordId     String?
+  intakeRecord       IntakeRecord?         @relation(fields: [intakeRecordId], references: [id])
+  residueTypeId      String
+  residueType        ResidueType           @relation(fields: [residueTypeId], references: [id])
+  form               String
+  grade              String
+  grossWeightKg      Decimal               @db.Decimal(14, 3)
+  tareWeightKg       Decimal               @db.Decimal(14, 3)
+  netWeightKg        Decimal               @db.Decimal(14, 3)
+  moisturePct        Decimal               @db.Decimal(6, 2)
+  impurityPct        Decimal               @db.Decimal(6, 2)
+  moistureDeductionKg Decimal              @db.Decimal(14, 3)
+  impurityDeductionKg Decimal              @db.Decimal(14, 3)
+  payableWeightKg    Decimal               @db.Decimal(14, 3)
+  ratePerTonnePaisa  Int
+  grossAmountPaisa   Int
+  deductionsPaisa    Int
+  transportCostPaisa Int
+  loadingCostPaisa   Int
+  taxAmountPaisa     Int
+  netPayablePaisa    Int
+  amountPaidPaisa    Int                   @default(0)
+  balanceDuePaisa    Int                   @default(0)
+  transportMode      LedgerTransportMode
+  vehicleNo          String?
+  distanceKm         Decimal               @db.Decimal(8, 2)
+  paymentStatus      PurchasePaymentStatus @default(PENDING)
+  paymentMethod      PurchasePaymentMethod?
+  paymentDate        DateTime?
+  paymentReference   String?
+  receiptUrl         String?
+  remarks            String?
+  cancellationReason String?
+  status             PurchaseStatus        @default(DRAFT)
+  deletedAt          DateTime?
+  createdById        String
+  approvedById       String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  payments           PurchasePayment[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([purchaseDate])
+  @@index([hubId, status])
+  @@index([farmerId, purchaseDate])
+  @@index([paymentStatus])
+  @@index([purchaseNo])
+}
+
+model PurchasePayment {
+  id        String                @id @default(cuid())
+  purchaseId String
+  purchase  Purchase              @relation(fields: [purchaseId], references: [id])
+  amountPaisa Int
+  paidAt    DateTime
+  method    PurchasePaymentMethod
+  referenceNo String?
+  mockMarker Boolean              @default(true)
+  createdById String
+  createdAt DateTime              @default(now())
+  @@index([purchaseId, paidAt])
+}
+
+model Customer {
+  id            String         @id @default(cuid())
+  buyerProfileId String?        @unique
+  buyerProfile  BuyerProfile?   @relation(fields: [buyerProfileId], references: [id])
+  name          String
+  industryType  String
+  gstin         String?
+  pan           String?
+  address       String?
+  state         String?
+  contactPerson String?
+  phone         String?
+  email         String?
+  creditTermsDays Int          @default(30)
+  creditLimitPaisa Int          @default(0)
+  status        CustomerStatus  @default(ACTIVE)
+  notes         String?
+  deletedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sales         Sale[]
+  @@index([name])
+  @@index([industryType])
+}
+
+model Sale {
+  id             String             @id @default(cuid())
+  saleNo         String             @unique
+  saleDate       DateTime
+  hubId          String
+  hub            HubProfile         @relation(fields: [hubId], references: [id])
+  customerId     String
+  customer       Customer           @relation(fields: [customerId], references: [id])
+  orderId        String?            @unique
+  order          Order?             @relation(fields: [orderId], references: [id])
+  subtotalPaisa  Int
+  discountPaisa  Int                @default(0)
+  gstPercent     Decimal            @db.Decimal(5, 2)
+  gstAmountPaisa Int
+  freightPaisa   Int                @default(0)
+  otherChargesPaisa Int             @default(0)
+  totalAmountPaisa Int
+  amountPaidPaisa Int              @default(0)
+  balanceDuePaisa Int
+  vehicleNo      String?
+  driverName     String?
+  dispatchDate   DateTime?
+  deliveryDate   DateTime?
+  deliveredQuantity Decimal         @db.Decimal(14, 3)
+  acceptedQuantity Decimal          @db.Decimal(14, 3)
+  rejectedQuantity Decimal          @db.Decimal(14, 3)
+  rejectionReason String?
+  deliveryStatus DeliveryStatus     @default(PLANNED)
+  paymentStatus  SalePaymentStatus  @default(UNPAID)
+  paymentTerms   String?
+  dueDate        DateTime?
+  invoiceUrl     String?
+  challanUrl     String?
+  carbonEstimateId String?
+  status         SaleStatus         @default(DRAFT)
+  deletedAt      DateTime?
+  remarks        String?
+  createdById    String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  items          SaleItem[]
+  payments       SalePayment[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([saleDate])
+  @@index([hubId, status])
+  @@index([customerId, saleDate])
+  @@index([paymentStatus])
+  @@index([deliveryStatus])
+}
+
+model SaleItem {
+  id            String     @id @default(cuid())
+  saleId        String
+  sale          Sale       @relation(fields: [saleId], references: [id])
+  lotId         String
+  lot           ProductLot @relation(fields: [lotId], references: [id])
+  lotCodeSnapshot String
+  quantity      Decimal    @db.Decimal(14, 3)
+  unit          String
+  ratePaisa     Int
+  gradeSnapshot String
+  hhvSnapshot   Decimal?   @db.Decimal(10, 2)
+  ashSnapshot   Decimal?   @db.Decimal(10, 2)
+  amountPaisa   Int
+  @@index([saleId])
+  @@index([lotId])
+}
+
+model SalePayment {
+  id          String             @id @default(cuid())
+  saleId      String
+  sale        Sale               @relation(fields: [saleId], references: [id])
+  amountPaisa Int
+  paidAt      DateTime
+  method      SalePaymentMethod
+  referenceNo String?
+  mockMarker  Boolean            @default(true)
+  createdById String
+  createdAt   DateTime           @default(now())
+  @@index([saleId, paidAt])
+}
+
+model InventoryMovement {
+  id          String                  @id @default(cuid())
+  hubId       String
+  hub         HubProfile              @relation(fields: [hubId], references: [id])
+  type        InventoryMovementType
+  stockKind   String
+  residueTypeId String?
+  residueType ResidueType?            @relation(fields: [residueTypeId], references: [id])
+  lotId       String?
+  lot         ProductLot?             @relation(fields: [lotId], references: [id])
+  purchaseId  String?
+  purchase    Purchase?               @relation(fields: [purchaseId], references: [id])
+  saleId      String?
+  sale        Sale?                   @relation(fields: [saleId], references: [id])
+  batchId     String?
+  batch       Batch?                  @relation(fields: [batchId], references: [id])
+  quantityKg  Decimal                 @db.Decimal(14, 3)
+  referenceId String
+  remarks     String?
+  createdAt   DateTime                @default(now())
+  @@index([hubId, stockKind, createdAt])
+  @@index([referenceId])
+}
+
+model LedgerSetting {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  value                 String
+  description           String?
+  updatedAt             DateTime @updatedAt
+}
