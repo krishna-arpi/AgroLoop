@@ -110,8 +110,9 @@ AgroLoop can support:
 
 ## Role and access model
 
-The application starts on the login page. Public research and material pages remain
-available without revealing operational ledgers.
+The application starts on the public AgroLoop home page. Research, materials,
+marketplace, farmer, buyer, procurement, sales, inventory and reporting features are
+directly accessible without a login gate.
 
 | Role | Primary access |
 |---|---|
@@ -261,7 +262,7 @@ Additional seeded roles include `farmer2`, `farmer3`, `hub2` and `buyer2`.
 
 | Route | Description |
 |---|---|
-| `/` | Login entry |
+| `/` | AgroLoop home |
 | `/research` | Institutional research and methodology |
 | `/data` | Residue benchmarks and hub economics |
 | `/marketplace` | Available bio-coal and pyroligneous-acid lots |
@@ -307,7 +308,7 @@ npm run test:e2e
 ```
 
 Playwright tests cover public research/data, marketplace filtering, lot lookup,
-login and protected ledger-route behavior.
+and direct procurement, sales, inventory, farmer and buyer routes.
 
 ## GitHub and Vercel deployment
 

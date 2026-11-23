@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("public research and data pages render", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Turning residue into industrial value" })).toBeVisible();
   await page.goto("/research");
   await expect(page.getByRole("heading", { name: "A circular platform for residue valorization" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "From residue collection to industrial lot" })).toBeVisible();
@@ -30,19 +30,18 @@ test("marketplace grade filter shows published lots", async ({ page }) => {
   await expect(page.getByText("LOT-PA-001")).toBeVisible();
 });
 
-test("procurement, sales and inventory routes require login", async ({ page }) => {
+test("procurement, sales and inventory routes are accessible", async ({ page }) => {
   await page.goto("/procurement");
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Farmer purchases" })).toBeVisible();
   await page.goto("/sales");
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Customer sales" })).toBeVisible();
   await page.goto("/inventory");
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Inventory and reports" })).toBeVisible();
 });
 
-test("demo hub login works", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("hub1@agroloop.local");
-  await page.getByLabel("Password").fill("AgroLoop123!");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/hub$/);
+test("farmer and buyer features are accessible", async ({ page }) => {
+  await page.goto("/farmer");
+  await expect(page.getByRole("heading", { name: "Farmer residue offer" })).toBeVisible();
+  await page.goto("/buyer");
+  await expect(page.getByRole("heading", { name: "Industrial buyer portal" })).toBeVisible();
 });

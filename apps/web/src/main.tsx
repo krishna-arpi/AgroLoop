@@ -26,15 +26,10 @@ function Provenance({ value = "PROPOSAL_REPORTED" }: { value?: string }) {
 function Layout({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
   useEffect(() => { document.documentElement.dataset.theme = dark ? "dark" : "light"; }, [dark]);
-  const { me } = useMe();
-  const role = me?.role;
-  return <><header className="header"><Link className="brand" to={role ? (role==="HUB_OPERATOR"?"/hub":role==="FARMER"?"/farmer":role==="INDUSTRIAL_BUYER"?"/buyer":"/admin"):"/login"}>AgroLoop</Link><nav>
+  return <><header className="header"><Link className="brand" to="/">AgroLoop</Link><nav>
     <Link to="/research">Research</Link><Link to="/data">Materials</Link><Link to="/marketplace">Marketplace</Link>
-    {role==="FARMER"&&<Link to="/farmer">Sell residue</Link>}
-    {role==="INDUSTRIAL_BUYER"&&<Link to="/buyer">Request material</Link>}
-    {(role==="HUB_OPERATOR"||role==="ADMIN")&&<><Link to="/hub">Hub</Link><Link to="/procurement">Procurement</Link><Link to="/sales">Sales</Link><Link to="/inventory">Inventory</Link></>}
-    {role==="ADMIN"&&<Link to="/admin">Admin</Link>}
-    {role?<button className="nav-login" type="button" onClick={async()=>{try{await api("/auth/logout",{method:"POST"})}catch{};window.location.href="/login"}}>Logout</button>:<Link to="/login">Login</Link>}
+    <Link to="/farmer">Sell residue</Link><Link to="/buyer">Request material</Link>
+    <Link to="/hub">Hub</Link><Link to="/procurement">Procurement</Link><Link to="/sales">Sales</Link><Link to="/inventory">Inventory</Link>
   </nav><button className="icon-button" onClick={() => setDark(v => !v)} aria-label="Toggle dark mode">{dark ? "☀" : "◐"}</button></header>{children}</>;
 }
 
@@ -243,7 +238,23 @@ function Admin() {
 }
 
 function App() {
-  return <BrowserRouter><Routes><Route path="/" element={<Login/>}/><Route path="/research" element={<Research/>}/><Route path="/data" element={<DataPage/>}/><Route path="/marketplace" element={<Marketplace/>}/><Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/><Route path="/lot/:code" element={<LotLookup/>}/><Route path="/farmer" element={<Guard role="FARMER"><Farmer/></Guard>}/><Route path="/hub" element={<Guard role="HUB_OPERATOR"><Hub/></Guard>}/><Route path="/buyer" element={<Guard role="INDUSTRIAL_BUYER"><Buyer/></Guard>}/><Route path="/admin" element={<Guard role="ADMIN"><Admin/></Guard>}/><Route path="/procurement" element={<Guard role="HUB_OPERATOR"><Procurement/></Guard>}/><Route path="/sales" element={<Guard role="HUB_OPERATOR"><SalesLedger/></Guard>}/><Route path="/inventory" element={<Guard role="HUB_OPERATOR"><InventoryAndReports/></Guard>}/><Route path="/reports" element={<Guard role="HUB_OPERATOR"><InventoryAndReports/></Guard>}/></Routes></BrowserRouter>;
+  return <BrowserRouter><Routes>
+    <Route path="/" element={<Home/>}/>
+    <Route path="/research" element={<Research/>}/>
+    <Route path="/data" element={<DataPage/>}/>
+    <Route path="/marketplace" element={<Marketplace/>}/>
+    <Route path="/login" element={<Navigate to="/" replace/>}/>
+    <Route path="/register" element={<Navigate to="/" replace/>}/>
+    <Route path="/lot/:code" element={<LotLookup/>}/>
+    <Route path="/farmer" element={<Layout><Farmer/></Layout>}/>
+    <Route path="/hub" element={<Layout><Hub/></Layout>}/>
+    <Route path="/buyer" element={<Layout><Buyer/></Layout>}/>
+    <Route path="/admin" element={<Layout><Admin/></Layout>}/>
+    <Route path="/procurement" element={<Layout><Procurement/></Layout>}/>
+    <Route path="/sales" element={<Layout><SalesLedger/></Layout>}/>
+    <Route path="/inventory" element={<Layout><InventoryAndReports/></Layout>}/>
+    <Route path="/reports" element={<Layout><InventoryAndReports/></Layout>}/>
+  </Routes></BrowserRouter>;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(<React.StrictMode><App/></React.StrictMode>);

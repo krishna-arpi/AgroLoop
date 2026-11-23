@@ -38,13 +38,13 @@ portals, API-backed data views and responsive earth-tone interface.
 
 | Route | Component | Access | Purpose |
 |---|---|---|---|
-| `/` | `Login` | PUBLIC | Login-first application entry |
+| `/` | `Home` | PUBLIC | Direct AgroLoop home page |
 | `/research` | `Research` | PUBLIC | Detailed proposal, methodology and literature |
 | `/data` | `DataPage` | PUBLIC | Residue comparison and hub economics calculator |
 | `/marketplace` | `Marketplace` | PUBLIC | Filterable published lot inventory |
 | `/lot/:code` | `LotLookup` | PUBLIC | Lot traceability lookup |
-| `/login` | `Login` | PUBLIC | Email/password sign-in |
-| `/register` | `Register` | PUBLIC | Role registration |
+| `/login` | Redirect | PUBLIC | Redirects to the home page |
+| `/register` | Redirect | PUBLIC | Redirects to the home page |
 | `/farmer` | `Farmer` | FARMER/ADMIN | Profile, listings, hubs and notifications |
 | `/hub` | `Hub` | HUB_OPERATOR/ADMIN | Intake, batch, quality and lot operations |
 | `/buyer` | `Buyer` | INDUSTRIAL_BUYER/ADMIN | Marketplace RFQ and order flow |
