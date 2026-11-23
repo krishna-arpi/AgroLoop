@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 6999",
     "build": "tsc -b && vite build",
+    "vercel-build": "cd ../.. && npm run vercel-build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
