@@ -19,6 +19,33 @@ test("public research and data pages render", async ({ page }) => {
   await expect(page.getByTestId("bio-coal-output")).toHaveText("3,400 kg");
 });
 
+test("language switch translates pages and persists the selection", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Turning residue into industrial value" })).toBeVisible();
+  await page.getByRole("button", { name: "Switch to Hindi" }).click();
+  await expect(page.getByRole("heading", { name: "कृषि अवशेषों को औद्योगिक मूल्य में बदलना" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "अनुसंधान", exact: true })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "hi");
+
+  await page.getByRole("link", { name: "अनुसंधान", exact: true }).click();
+  await expect(page.getByText("संभावित सतत विकास लक्ष्य योगदान").first()).toBeVisible();
+  await expect(page.getByText("सस्ती और स्वच्छ ऊर्जा")).toBeVisible();
+  await expect(page.getByText("सम्मानजनक कार्य और आर्थिक विकास")).toBeVisible();
+  await expect(page.getByText("संभावित लक्ष्य संरेखण: 7.2")).toBeVisible();
+  await expect(page.getByRole("link", { name: "संयुक्त राष्ट्र के आधिकारिक SDG लक्ष्य देखें" }))
+    .toHaveAttribute("href", "https://sdgs.un.org/goals");
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "अवशेषों के मूल्यवर्धन के लिए एक चक्रीय मंच" })).toBeVisible();
+  await page.getByRole("link", { name: "अवशेष बेचें", exact: true }).click();
+  const baleOrLooseSelect = page.locator("select").nth(1);
+  await baleOrLooseSelect.selectOption("loose");
+  await expect(baleOrLooseSelect).toHaveValue("loose");
+  await page.getByRole("button", { name: "हिंदी में बदलें" }).click();
+  await page.getByRole("link", { name: "Research", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "A circular platform for residue valorization" })).toBeVisible();
+});
+
 test("public lot lookup page renders", async ({ page }) => {
   await page.goto("/lot/NOT-A-REAL-LOT");
   await expect(page.getByRole("heading", { name: "Public lot lookup" })).toBeVisible();
