@@ -6,13 +6,27 @@ test("public research and data pages render", async ({ page }) => {
   await page.goto("/research");
   await expect(page.getByRole("heading", { name: "A circular platform for residue valorization" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "From residue collection to industrial lot" })).toBeVisible();
+  await expect(page.locator(".research-page > section").last()).toHaveAttribute("id", "sdgs");
+  const sdgNumbers = await page.locator(".sdg-overview-number").allTextContents();
+  expect(sdgNumbers).toEqual(Array.from({ length: 17 }, (_, index) => String(index + 1)));
+  await page.getByRole("link", { name: "SDGs", exact: true }).click();
+  const sdgHeading = page.getByRole("heading", { name: "The 17 Sustainable Development Goals" });
+  await expect(sdgHeading).toBeInViewport();
+  const headingTop = await sdgHeading.evaluate(element => element.getBoundingClientRect().top);
+  const navBottom = await page.locator(".research-nav").evaluate(element => element.getBoundingClientRect().bottom);
+  expect(headingTop).toBeGreaterThan(navBottom);
   await page.goto("/data");
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("heading", { name: "Residue data and benchmarks" })).toBeVisible();
   await expect(page.getByLabel("Residue")).toBeVisible();
   await expect(page.getByLabel("Residue").locator("option").first()).toBeAttached();
   await expect(page.getByRole("heading", { name: "Hub economics calculator" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Paddy straw/ })).toBeVisible();
-  await page.getByLabel("Residue").selectOption({ label: "Rice husk" });
+  const residueSelect = page.getByLabel("Residue");
+  const riceHuskValue = await residueSelect.locator("option").filter({ hasText: "Rice husk" }).getAttribute("value");
+  expect(riceHuskValue).not.toBeNull();
+  await residueSelect.selectOption(riceHuskValue!);
+  await expect(residueSelect).toHaveValue(riceHuskValue!);
   await expect(page.getByRole("heading", { name: /Rice husk/ })).toBeVisible();
   await page.getByLabel("Processing tonnes per day").focus();
   await page.getByLabel("Processing tonnes per day").press("End");
@@ -29,8 +43,8 @@ test("language switch translates pages and persists the selection", async ({ pag
 
   await page.getByRole("link", { name: "अनुसंधान", exact: true }).click();
   await expect(page.getByText("संभावित सतत विकास लक्ष्य योगदान").first()).toBeVisible();
-  await expect(page.getByText("सस्ती और स्वच्छ ऊर्जा")).toBeVisible();
-  await expect(page.getByText("सम्मानजनक कार्य और आर्थिक विकास")).toBeVisible();
+  await expect(page.getByText("सस्ती और स्वच्छ ऊर्जा", { exact: true })).toBeVisible();
+  await expect(page.getByText("सम्मानजनक कार्य और आर्थिक विकास", { exact: true })).toBeVisible();
   await expect(page.getByText("संभावित लक्ष्य संरेखण: 7.2")).toBeVisible();
   await expect(page.getByRole("link", { name: "संयुक्त राष्ट्र के आधिकारिक SDG लक्ष्य देखें" }))
     .toHaveAttribute("href", "https://sdgs.un.org/goals");

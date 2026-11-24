@@ -41,8 +41,25 @@ const hindiTranslations: Record<string, string> = {
   "5 tonne/day reference hub": "5 टन/दिन का संदर्भ केंद्र",
   "350–500°C calibration range": "350–500°C अंशांकन सीमा",
   "Potential SDG contributions": "संभावित सतत विकास लक्ष्य योगदान",
+  "The 17 Sustainable Development Goals": "17 सतत विकास लक्ष्य",
   "Potential target alignment:": "संभावित लक्ष्य संरेखण:",
   "View official UN SDG targets": "संयुक्त राष्ट्र के आधिकारिक SDG लक्ष्य देखें",
+  "All 17 Sustainable Development Goals": "सभी 17 सतत विकास लक्ष्य",
+  "The UN numbers its goals from 1 to 17. The highlighted goals are the ones with a plausible connection to this proposal; the others are not claimed as aligned.": "संयुक्त राष्ट्र के लक्ष्य 1 से 17 तक क्रमांकित हैं। हाइलाइट किए गए लक्ष्यों का इस प्रस्ताव से संभावित संबंध है; अन्य लक्ष्यों के साथ संरेखण का दावा नहीं किया गया है।",
+  "Potential link identified": "संभावित संबंध",
+  "No direct link identified in the current proposal": "वर्तमान प्रस्ताव में कोई प्रत्यक्ष संबंध नहीं पहचाना गया",
+  "No Poverty": "गरीबी उन्मूलन",
+  "Zero Hunger": "शून्य भुखमरी",
+  "Good Health and Well-being": "अच्छा स्वास्थ्य और खुशहाली",
+  "Quality Education": "गुणवत्तापूर्ण शिक्षा",
+  "Gender Equality": "लैंगिक समानता",
+  "Clean Water and Sanitation": "स्वच्छ जल और स्वच्छता",
+  "Reduced Inequalities": "असमानताओं में कमी",
+  "Sustainable Cities and Communities": "टिकाऊ शहर और समुदाय",
+  "Life Below Water": "जल के नीचे जीवन",
+  "Life on Land": "धरती पर जीवन",
+  "Peace, Justice and Strong Institutions": "शांति, न्याय और सशक्त संस्थान",
+  "Partnerships for the Goals": "लक्ष्यों के लिए साझेदारी",
   "Research page sections": "अनुसंधान पृष्ठ के अनुभाग",
   "Potential contributions only": "केवल संभावित योगदान",
   "These links describe the project's intended contribution. They are not verified SDG outcomes or certification; measured lifecycle and social data are required.": "ये संबंध परियोजना के अपेक्षित योगदान बताते हैं। ये सत्यापित SDG परिणाम या प्रमाणन नहीं हैं; इनके लिए मापे गए जीवन-चक्र और सामाजिक आंकड़े आवश्यक हैं।",
@@ -556,6 +573,25 @@ function Research() {
   const t = useTranslation();
 
   const [step, setStep] = useState(0);
+  const sdgGoals = [
+    { number: 1, title: "No Poverty", color: "#e5243b", mapped: false },
+    { number: 2, title: "Zero Hunger", color: "#dda63a", mapped: false },
+    { number: 3, title: "Good Health and Well-being", color: "#4c9f38", mapped: false },
+    { number: 4, title: "Quality Education", color: "#c5192d", mapped: false },
+    { number: 5, title: "Gender Equality", color: "#ff3a21", mapped: false },
+    { number: 6, title: "Clean Water and Sanitation", color: "#26bde2", mapped: false },
+    { number: 7, title: "Affordable and clean energy", color: "#fcc30b", mapped: true },
+    { number: 8, title: "Decent work and economic growth", color: "#a21942", mapped: true },
+    { number: 9, title: "Industry, innovation and infrastructure", color: "#fd6925", mapped: true },
+    { number: 10, title: "Reduced Inequalities", color: "#dd1367", mapped: false },
+    { number: 11, title: "Sustainable Cities and Communities", color: "#fd9d24", mapped: false },
+    { number: 12, title: "Responsible consumption and production", color: "#bf8b2e", mapped: true },
+    { number: 13, title: "Climate action", color: "#3f7e44", mapped: true },
+    { number: 14, title: "Life Below Water", color: "#0a97d9", mapped: false },
+    { number: 15, title: "Life on Land", color: "#56c02b", mapped: false },
+    { number: 16, title: "Peace, Justice and Strong Institutions", color: "#00689d", mapped: false },
+    { number: 17, title: "Partnerships for the Goals", color: "#19486a", mapped: false },
+  ];
   const processSteps = [
     { title: "Source & aggregate", subtitle: "Rural residue clusters", detail: "Collect paddy or wheat straw, sugarcane bagasse, pulse stalks and corn cobs through farmers and FPO aggregation nodes.", target: "Transparent origin and availability records" },
     { title: "Precondition", subtitle: "Dry & size", detail: "Air-dry residue below 15% moisture and shred it to an approximately 20–40 mm particulate size.", target: "Feedstock consistency before carbonization" },
@@ -573,15 +609,7 @@ function Research() {
   return <Layout><main className="research-page">
     <section className="research-hero"><div><p className="eyebrow">{t("Institutional research framework")}</p><h1>{t("A circular platform for residue valorization")}</h1><p>{t("AgroLoop studies how decentralized thermochemical conversion and a traceable three-sided marketplace can reduce open-burning pressure while supplying engineered industrial fuel.")}</p></div><aside className="research-summary"><span>{t("3 research objectives")}</span><span>{t("5 tonne/day reference hub")}</span><span>{t("350–500°C calibration range")}</span></aside></section>
 
-    <nav className="research-nav" aria-label={t("Research page sections")}><a href="#sdgs">{t("SDGs")}</a><a href="#context">{t("Context")}</a><a href="#objectives">{t("Objectives")}</a><a href="#methodology">{t("Methodology")}</a><a href="#data">{t("Data")}</a><a href="#economics">{t("Economics")}</a><a href="#literature">{t("Literature")}</a></nav>
-
-    <section className="research-section sdg-section" id="sdgs"><div className="section-heading"><span>{t("SDG")}</span><div><p className="eyebrow">{t("Potential SDG contributions")}</p><h2>{t("Potential SDG contributions")}</h2></div></div><p className="sdg-disclaimer">{t("These links describe the project's intended contribution. They are not verified SDG outcomes or certification; measured lifecycle and social data are required.")}</p><p className="sdg-source"><a href="https://sdgs.un.org/goals" target="_blank" rel="noreferrer">{t("View official UN SDG targets")}</a></p><div className="sdg-grid">
-      <article className="sdg-card sdg-7"><b>{t("7")}</b><div><h3>{t("SDG 7")}{t(":")}{" "}{t("Affordable and clean energy")}</h3><small className="sdg-targets">{t("Potential target alignment:")} 7.2</small><p>{t("Potential link: locally produced bio-coal may provide an alternative fuel when biomass is sustainably sourced and lifecycle emissions are demonstrated.")}</p></div></article>
-      <article className="sdg-card sdg-8"><b>{t("8")}</b><div><h3>{t("SDG 8")}{t(":")}{" "}{t("Decent work and economic growth")}</h3><small className="sdg-targets">{t("Potential target alignment:")} 8.3</small><p>{t("Potential link: organized residue collection and village processing could create rural market access and livelihood opportunities.")}</p></div></article>
-      <article className="sdg-card sdg-9"><b>{t("9")}</b><div><h3>{t("SDG 9")}{t(":")}{" "}{t("Industry, innovation and infrastructure")}</h3><small className="sdg-targets">{t("Potential target alignment:")} 9.4, 9.5</small><p>{t("Potential link: modular retorts and traceable processing infrastructure apply local innovation to small-scale industrial supply.")}</p></div></article>
-      <article className="sdg-card sdg-12"><b>{t("12")}</b><div><h3>{t("SDG 12")}{t(":")}{" "}{t("Responsible consumption and production")}</h3><small className="sdg-targets">{t("Potential target alignment:")} 12.2, 12.5</small><p>{t("Potential link: converting agricultural residues into useful products may improve resource use and reduce unmanaged residue disposal.")}</p></div></article>
-      <article className="sdg-card sdg-13"><b>{t("13")}</b><div><h3>{t("SDG 13")}{t(":")}{" "}{t("Climate action")}</h3><small className="sdg-targets">{t("Potential target alignment:")} 13.2</small><p>{t("Potential link: avoiding open burning may reduce some emissions, subject to field measurement and full lifecycle accounting.")}</p></div></article>
-    </div></section>
+    <nav className="research-nav" aria-label={t("Research page sections")}><a href="#context">{t("Context")}</a><a href="#objectives">{t("Objectives")}</a><a href="#methodology">{t("Methodology")}</a><a href="#data">{t("Data")}</a><a href="#economics">{t("Economics")}</a><a href="#literature">{t("Literature")}</a><a href="#sdgs">{t("SDGs")}</a></nav>
 
     <section className="research-section" id="context"><div className="section-heading"><span>{t("01")}</span><div><p className="eyebrow">{t("Problem and response")}</p><h2>{t("Closing the residue-to-industrial-fuel loop")}</h2></div></div><div className="grid-two"><article className="panel"><h3>{t("The ecological constraint")}</h3><p>{t("Seasonal residue burning contributes aerosol loading, smog episodes and soil organic-carbon loss. Untreated residue also retains volatile alkali salts and chlorine that can accelerate slagging, fouling and corrosion in demanding thermal equipment.")}</p></article><article className="panel"><h3>{t("The proposed system")}</h3><p>{t("AgroLoop proposes village-cluster retorts that convert heterogeneous residues into bio-coal and pyroligneous acid. A digital supply chain coordinates farmers or FPOs, processing hubs and industrial buyers while preserving batch evidence.")}</p></article></div><div className="supply-chain"><div><b>{t("Farmers & FPOs")}</b><small>{t("Supply and trace residue")}</small></div><i>{t("→")}</i><div><b>{t("Village hub")}</b><small>{t("Process and characterize")}</small></div><i>{t("→")}</i><div><b>{t("Industrial buyer")}</b><small>{t("Require and accept fuel")}</small></div></div></section>
 
@@ -594,6 +622,27 @@ function Research() {
     <section className="research-section" id="economics"><div className="section-heading"><span>{t("05")}</span><div><p className="eyebrow">{t("Techno-economic framework")}</p><h2>{t("Reference 5 tonne/day hub")}</h2></div></div><div className="economics-grid"><article><b>{t("₹22.0 lakh")}</b><h3>{t("Annual operating EBITDA")}</h3><p>{t("Proposal assumption; to be recalculated from measured inputs and operating data.")}</p><Provenance value="PROPOSAL_REPORTED"/></article><article><b>{t("1.4 years")}</b><h3>{t("Capital payback")}</h3><p>{t("Reference model figure pending validation against capex, utilization and downtime.")}</p><Provenance value="MODELLED"/></article><article><b>{t("1,850 t")}</b><h3>{t("Net annual abatement")}</h3><p>{t("Estimated value only; not verified credits or an audited inventory result.")}</p><span className="badge modelled">{t("ESTIMATED, NOT VERIFIED")}</span></article></div><div className="grid-two"><article className="panel"><h3>{t("Farmer economics")}</h3><p>{t("Proposed floor price:")}{" "}<strong>{t("₹1,800–₹2,200 per tonne")}</strong> {" "}{t("of baled residue delivered to the local hub.")}</p></article><article className="panel"><h3>{t("Pyroligneous acid")}</h3><p>{t("Target co-condensate yield:")}{" "}<strong>{t("18–25 litres per tonne")}</strong> {" "}{t("of processed residue. Agricultural benefit remains to be evaluated experimentally.")}</p></article></div></section>
 
     <section className="research-section" id="literature"><div className="section-heading"><span>{t("06")}</span><div><p className="eyebrow">{t("State of the art")}</p><h2>{t("Literature review and identified gaps")}</h2></div></div><div className="literature-grid"><article><span className="lit-year">{t("2021")}</span><h3>{t("Tripathi et al.")}</h3><p>{t("Autothermal carbonization and volatile alkali/chlorine removal from high-silica residues.")}</p><small>{t("Bioresource Technology")}</small></article><article><span className="lit-year">{t("2022")}</span><h3>{t("Kumar & Patel")}</h3><p>{t("Decentralized versus centralized biomass processing economics and logistics.")}</p><small>{t("Renewable and Sustainable Energy Reviews")}</small></article><article><span className="lit-year">{t("2023")}</span><h3>{t("Singh, Sharma & Verma")}</h3><p>{t("Digital marketplace architectures for agricultural residue in emerging circular economies.")}</p><small>{t("Journal of Cleaner Production")}</small></article></div><div className="gap-panel"><h3>{t("Operational research gap")}</h3><p>{t("Current literature lacks an integrated, low-capital thermal upgrading model combining in-situ alkali volatilization, modular retort operation and a digitally coordinated procurement system for fragmented smallholders and continuous industrial demand.")}</p></div><div className="references"><h3>{t("References")}</h3><ol><li>{t("Kumar, R., & Patel, V. (2022). “Logistics modeling and techno-economic optimization of decentralized versus centralized biomass processing units.”")}{" "}<em>{t("Renewable and Sustainable Energy Reviews")}</em>{t(", 154, 111832.")}</li><li>{t("Singh, A., Sharma, M., & Verma, P. (2023). “Digital marketplace architectures for agricultural residue valorization in emerging circular economies.”")}{" "}<em>{t("Journal of Cleaner Production")}</em>{t(", 388, 135980.")}</li><li>{t("Tripathi, M., Sahu, J. N., & Ganesan, P. (2021). “Effect of autothermal carbonization on the removal of volatile alkali salts and chlorine from high-silica rice residues.”")}{" "}<em>{t("Bioresource Technology")}</em>{t(", 321, 124485.")}</li><li>{t("Ministry of Power, Government of India. (2023).")}{" "}<em>{t("Revised Policy for Biomass Utilization for Power Generation through Co-firing in Coal Based Thermal Power Plants")}</em>{t(". SAMARTH Mission.")}</li></ol><p className="footnote"><strong>{t("Verification note:")}</strong> {" "}{t("Verify citations and DOIs before academic submission.")}</p></div></section>
+    <section className="research-section sdg-section" id="sdgs" aria-labelledby="sdg-heading">
+      <div className="section-heading"><span>{t("SDG")}</span><div><p className="eyebrow">{t("Potential SDG contributions")}</p><h2 id="sdg-heading">{t("The 17 Sustainable Development Goals")}</h2></div></div>
+      <p className="sdg-overview-intro">{t("The UN numbers its goals from 1 to 17. The highlighted goals are the ones with a plausible connection to this proposal; the others are not claimed as aligned.")}</p>
+      <ol className="sdg-overview" aria-label={t("All 17 Sustainable Development Goals")}>
+        {sdgGoals.map(goal => <li className={`sdg-overview-card${goal.mapped ? " is-mapped" : ""}`} aria-label={`${t("SDG")} ${goal.number}: ${t(goal.title)}. ${t(goal.mapped ? "Potential link identified" : "No direct link identified in the current proposal")}`} key={goal.number}>
+          <span className="sdg-overview-number" style={{ backgroundColor: goal.color }}>{goal.number}</span>
+          <div><strong>{t(goal.title)}</strong>{goal.mapped && <small>{t("Potential link identified")}</small>}</div>
+        </li>)}
+      </ol>
+      <p className="sdg-legend"><span><i />{t("Potential link identified")}</span><span>{t("No direct link identified in the current proposal")}</span></p>
+      <h3 className="sdg-detail-heading">{t("Potential SDG contributions")}</h3>
+      <p className="sdg-disclaimer">{t("These links describe the project's intended contribution. They are not verified SDG outcomes or certification; measured lifecycle and social data are required.")}</p>
+      <p className="sdg-source"><a href="https://sdgs.un.org/goals" target="_blank" rel="noreferrer">{t("View official UN SDG targets")}</a></p>
+      <div className="sdg-grid">
+        <article className="sdg-card sdg-7"><b>{t("7")}</b><div><h4>{t("SDG 7")}{t(":")}{" "}{t("Affordable and clean energy")}</h4><small className="sdg-targets">{t("Potential target alignment:")} 7.2</small><p>{t("Potential link: locally produced bio-coal may provide an alternative fuel when biomass is sustainably sourced and lifecycle emissions are demonstrated.")}</p></div></article>
+        <article className="sdg-card sdg-8"><b>{t("8")}</b><div><h4>{t("SDG 8")}{t(":")}{" "}{t("Decent work and economic growth")}</h4><small className="sdg-targets">{t("Potential target alignment:")} 8.3</small><p>{t("Potential link: organized residue collection and village processing could create rural market access and livelihood opportunities.")}</p></div></article>
+        <article className="sdg-card sdg-9"><b>{t("9")}</b><div><h4>{t("SDG 9")}{t(":")}{" "}{t("Industry, innovation and infrastructure")}</h4><small className="sdg-targets">{t("Potential target alignment:")} 9.4, 9.5</small><p>{t("Potential link: modular retorts and traceable processing infrastructure apply local innovation to small-scale industrial supply.")}</p></div></article>
+        <article className="sdg-card sdg-12"><b>{t("12")}</b><div><h4>{t("SDG 12")}{t(":")}{" "}{t("Responsible consumption and production")}</h4><small className="sdg-targets">{t("Potential target alignment:")} 12.2, 12.5</small><p>{t("Potential link: converting agricultural residues into useful products may improve resource use and reduce unmanaged residue disposal.")}</p></div></article>
+        <article className="sdg-card sdg-13"><b>{t("13")}</b><div><h4>{t("SDG 13")}{t(":")}{" "}{t("Climate action")}</h4><small className="sdg-targets">{t("Potential target alignment:")} 13.2</small><p>{t("Potential link: avoiding open burning may reduce some emissions, subject to field measurement and full lifecycle accounting.")}</p></div></article>
+      </div>
+    </section>
   </main></Layout>;
 }
 
